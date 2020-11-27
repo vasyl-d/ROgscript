@@ -1,10 +1,10 @@
-//функции для расширения возможностей гугл-таблиц для работы с РемОНлайн
-//
+//Набор функция для связи РемОнлайн и гугл-таблиц
+// (С) Vasyl-D
 //
 
-var api_key = '';
+var api_key = '0e4705dab5a64e519df9edca3d5eb744';
 var token = '';
-var LifeTime = new Date();
+var LifeTime = new Date().getTime()-10;
 
 function _today0() {
  var dd = new Date();
@@ -14,6 +14,8 @@ function _today0() {
 
 function _roLogin() {
   //логинимся в РО
+  //надо избавиться от конкуренции за глобальную переменную
+  
   var url = 'https://api.remonline.ru/token/new';
   var options = {
         'method' : 'post',
@@ -21,26 +23,34 @@ function _roLogin() {
         'content-type' : 'application/x-www-form-urlen-coded',
         'muteHttpExceptions' : false  
       };
-  
- if (token == '' || LifeTime < new Date()) { 
+   var lock = LockService.getScriptLock();
+   var success = lock.tryLock(1000);
+    if (!success) {
+         Logger.log('Could not obtain lock after 1 seconds.');
+         return(0);
+   }
+   
+ if (token == '' || LifeTime < new Date().getTime()) { 
   //нужен новый токен
   var login = UrlFetchApp.fetch(url , options);
   var data = JSON.parse(login.getContentText("UTF-8"));
   var lt = new Date().getTime()+480000;
   if (data.success) {
      token = data.token;
-     LifeTime = new Date(lt);
+     LifeTime = lt;
    } else {
      return (0);
    }
   }
+ lock.releaseLock();
  return (1);
 }
 
 function getROcashbox() {
-//получаем список касс
+
  if (_roLogin() == 0) {return ([0])}
 
+ //запросим список касс
   var url = 'https://api.remonline.ru/cashbox/?token='+token;
   var login = UrlFetchApp.fetch(url);
   var data = JSON.parse(login.getContentText("UTF-8"));
@@ -56,7 +66,6 @@ function getROcashbox() {
 }
 
 function getROtodayCash(dd, dd0) {
-//обороты по кассам за период
  if (_roLogin() == 0) {return ([0])}
  //запросим список касс
   var url = 'https://api.remonline.ru/cashbox/?token='+token;
@@ -87,7 +96,6 @@ function getROtodayCash(dd, dd0) {
 }
 
 function getROwarehouses() {
-//список складов
 if (_roLogin() == 0) {return ([0])}
  //запросим список складов
   var url = 'https://api.remonline.ru/warehouse/?token='+token;
@@ -105,7 +113,6 @@ if (_roLogin() == 0) {return ([0])}
 }
 
 function getROlocations() {
-//список локаций
 if (_roLogin() == 0) {return ([0])}
   //запросим список локаций
   var url = 'https://api.remonline.ru/branches/?token='+token;
@@ -123,7 +130,6 @@ if (_roLogin() == 0) {return ([0])}
 }
 
 function getROorders(dd,dd0) {
-//заказы за период
 if (_roLogin() == 0) {return ([0])} 
   //запросим список заказов
   dd0 = new Date(dd0).getTime();
@@ -150,7 +156,6 @@ if (_roLogin() == 0) {return ([0])}
 }
 
 function getROsales(dd,dd0) {
-//продажи за период
 if (_roLogin() == 0) {return ([0])}
   //запросим список заказов
   dd0 = new Date(dd0).getTime();
@@ -172,6 +177,28 @@ if (_roLogin() == 0) {return ([0])}
                       headerRow = Object.keys(currentValue);
                       var row = headerRow.map(function(key){ return currentValue[key]});
                       contents[i+1] = row;
+                     };
+   return(contents);
+}
+
+function getROleads(dd,dd0) {
+if (_roLogin() == 0) {return ([0])} 
+  //запросим список лидов
+  dd0 = new Date(dd0).getTime();
+  dd = new Date(dd).getTime();
+  var url = 'https://api.remonline.ru/lead/?token='+token+'&created_at[]='+dd0+'&created_at[]='+dd;
+  var login = UrlFetchApp.fetch(url);
+  var data = JSON.parse(login.getContentText("UTF-8"));
+  var cnt = data.count;
+  if (cnt == 0) { 
+      return ([0]);
+      }
+  var contents =[]; 
+      contents[0] = ['id','Статус','Группа','Клиент телефон','Клиент, имя'];
+  var i;
+  for (i = 0; i < cnt; i++)  { 
+                      var cV = data.data[i];
+                      contents[i+1] = [cV.lead_id_label, cV.status.name, cV.status.group, cV.contact_phone, cV.contact_name];  ;
                      };
    return(contents);
 }
