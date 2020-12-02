@@ -1,7 +1,3 @@
-//Набор функция для связи РемОнлайн и гугл-таблиц
-// (С) Vasyl-D
-//
-
 var api_key = '0e4705dab5a64e519df9edca3d5eb744';
 var token = '';
 var LifeTime = new Date().getTime()-10;
@@ -15,7 +11,13 @@ function _today0() {
 function _roLogin() {
   //логинимся в РО
   //надо избавиться от конкуренции за глобальную переменную
-  
+   var lock = LockService.getScriptLock();
+   var success = lock.tryLock(20000);
+    if (!success) {
+         Logger.log('Could not obtain lock after 20 seconds.');
+         return(0);
+     }
+   
   var url = 'https://api.remonline.ru/token/new';
   var options = {
         'method' : 'post',
@@ -23,18 +25,12 @@ function _roLogin() {
         'content-type' : 'application/x-www-form-urlen-coded',
         'muteHttpExceptions' : false  
       };
-   var lock = LockService.getScriptLock();
-   var success = lock.tryLock(1000);
-    if (!success) {
-         Logger.log('Could not obtain lock after 1 seconds.');
-         return(0);
-   }
    
  if (token == '' || LifeTime < new Date().getTime()) { 
   //нужен новый токен
   var login = UrlFetchApp.fetch(url , options);
   var data = JSON.parse(login.getContentText("UTF-8"));
-  var lt = new Date().getTime()+480000;
+  var lt = new Date().getTime()+540000;
   if (data.success) {
      token = data.token;
      LifeTime = lt;
@@ -197,8 +193,59 @@ if (_roLogin() == 0) {return ([0])}
       contents[0] = ['id','Статус','Группа','Клиент телефон','Клиент, имя'];
   var i;
   for (i = 0; i < cnt; i++)  { 
-                      var cV = data.data[i];
+                      let cV = data.data[i];
                       contents[i+1] = [cV.lead_id_label, cV.status.name, cV.status.group, cV.contact_phone, cV.contact_name];  ;
                      };
+   return(contents);
+}
+
+function getROClients(dd,dd0) {
+if (_roLogin() == 0) {return ([0])} 
+  //запросим список клиентов
+  dd0 = new Date(dd0).getTime();
+  dd = new Date(dd).getTime();
+  var url = 'https://api.remonline.ru/clients/?token='+token+'&modified_at[]='+dd0+'&modified_at[]='+dd;
+  var login = UrlFetchApp.fetch(url);
+  var data = JSON.parse(login.getContentText("UTF-8"));
+  var cnt = data.count;
+  if (cnt == 0) { 
+      return ([0]);
+      }
+  var contents =[]; 
+      contents[0] = ['id','Д.Карта','Email','Клиент телефон','Клиент имя'];
+  var i;
+  for (i = 0; i < cnt; i++)  { 
+                      let cV = data.data[i];
+                      contents[i+1] = [cV.id, cV.discount_code, cV.email, cV.phone[0], cV.name];  ;
+                     };
+   return(contents);
+}
+
+function getROSaleProducts(dd,dd0) {
+if (_roLogin() == 0) {return ([0])}
+  //запросим список продаж
+  dd0 = new Date(dd0).getTime();
+  dd = new Date(dd).getTime();
+  
+  var url = 'https://api.remonline.ru/retail/sales/?token='+token+'&created_at[]='+dd0+'&created_at[]='+dd;
+  var login = UrlFetchApp.fetch(url);
+  var data = JSON.parse(login.getContentText("UTF-8"));
+  var cnt = data.count;
+  if (cnt == 0) { 
+      return ([0]); //нет продаж
+      }
+  //отработать пагинацию 50 строк на страницу
+  
+  var contents = [];
+      contents[0] = ['id','created','Сотрудник','Склад', 'Клиент', 'Товар', 'кол-во', 'Цена.ед','Себестоимость.ед','Скидка'];
+  let j=1; 
+  for (let i in data.data)  { 
+      var cV = data.data[i];
+      for (let tr in cV.products) {
+          contents[j] = [cV.id_label, new Date(cV.created_at), cV.created_by_id, cV.warehouse_id, cV.client_id, 
+          cV.products[tr].title, cV.products[tr].amount, cV.products[tr].price, cV.products[tr].cost, cV.products[tr].discount_value];
+          j++;
+      };
+  };
    return(contents);
 }
