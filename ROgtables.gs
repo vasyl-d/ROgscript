@@ -1,6 +1,9 @@
 var api_key = '0e4705dab5a64e519df9edca3d5eb744';
-var token = '';
-var LifeTime = new Date().getTime()-10;
+var scriptProperties = PropertiesService.getScriptProperties();
+let lt = new Date().getTime()-100;
+scriptProperties.setProperties({'token' : '',
+  'LifeTime' : lt
+  });
 
 function _today0() {
  var dd = new Date();
@@ -17,7 +20,10 @@ function _roLogin() {
          Logger.log('Could not obtain lock after 20 seconds.');
          return(0);
      }
-   
+  let token = scriptProperties.getProperty('token');
+  let LifeTime = scriptProperties.getProperty('LifeTime');
+ 
+  Logger.log('login token before:', token, 'lt before: ', LifeTime);
   var url = 'https://api.remonline.ru/token/new';
   var options = {
         'method' : 'post',
@@ -33,7 +39,10 @@ function _roLogin() {
   var lt = new Date().getTime()+540000;
   if (data.success) {
      token = data.token;
-     LifeTime = lt;
+     scriptProperties.setProperties({'token' : token,
+                      'LifeTime' : lt
+                       });
+     Logger.log('login token after:', token, 'lt after: ', lt);
    } else {
      return (0);
    }
@@ -46,6 +55,8 @@ function getROcashbox() {
 
  if (_roLogin() == 0) {return ([0])}
 
+  let token = scriptProperties.getProperty('token');
+  let LifeTime = scriptProperties.getProperty('LifeTime');
  //запросим список касс
   var url = 'https://api.remonline.ru/cashbox/?token='+token;
   var login = UrlFetchApp.fetch(url);
@@ -64,6 +75,8 @@ function getROcashbox() {
 function getROtodayCash(dd, dd0) {
  if (_roLogin() == 0) {return ([0])}
  //запросим список касс
+  let token = scriptProperties.getProperty('token');
+  let LifeTime = scriptProperties.getProperty('LifeTime');
   var url = 'https://api.remonline.ru/cashbox/?token='+token;
   var login = UrlFetchApp.fetch(url);
   var data = JSON.parse(login.getContentText("UTF-8"));
@@ -94,7 +107,9 @@ function getROtodayCash(dd, dd0) {
 function getROwarehouses() {
 if (_roLogin() == 0) {return ([0])}
  //запросим список складов
-  var url = 'https://api.remonline.ru/warehouse/?token='+token;
+ let token = scriptProperties.getProperty('token');
+ let LifeTime = scriptProperties.getProperty('LifeTime');
+ var url = 'https://api.remonline.ru/warehouse/?token='+token;
   var login = UrlFetchApp.fetch(url);
   var data = JSON.parse(login.getContentText("UTF-8"));
   var i=0;
@@ -111,6 +126,9 @@ if (_roLogin() == 0) {return ([0])}
 function getROlocations() {
 if (_roLogin() == 0) {return ([0])}
   //запросим список локаций
+  let token = scriptProperties.getProperty('token');
+  let LifeTime = scriptProperties.getProperty('LifeTime');
+ 
   var url = 'https://api.remonline.ru/branches/?token='+token;
   var login = UrlFetchApp.fetch(url);
   var data = JSON.parse(login.getContentText("UTF-8"));
@@ -127,6 +145,10 @@ if (_roLogin() == 0) {return ([0])}
 
 function getROorders(dd,dd0) {
 if (_roLogin() == 0) {return ([0])} 
+
+  let token = scriptProperties.getProperty('token');
+  let LifeTime = scriptProperties.getProperty('LifeTime');
+ 
   //запросим список заказов
   dd0 = new Date(dd0).getTime();
   dd = new Date(dd).getTime();
@@ -153,6 +175,10 @@ if (_roLogin() == 0) {return ([0])}
 
 function getROsales(dd,dd0) {
 if (_roLogin() == 0) {return ([0])}
+
+  let token = scriptProperties.getProperty('token');
+  let LifeTime = scriptProperties.getProperty('LifeTime');
+ 
   //запросим список заказов
   dd0 = new Date(dd0).getTime();
   dd = new Date(dd).getTime();
@@ -178,7 +204,11 @@ if (_roLogin() == 0) {return ([0])}
 }
 
 function getROleads(dd,dd0) {
-if (_roLogin() == 0) {return ([0])} 
+if (_roLogin() == 0) {return ([0])}
+
+  let token = scriptProperties.getProperty('token');
+  let LifeTime = scriptProperties.getProperty('LifeTime');
+ 
   //запросим список лидов
   dd0 = new Date(dd0).getTime();
   dd = new Date(dd).getTime();
@@ -201,6 +231,10 @@ if (_roLogin() == 0) {return ([0])}
 
 function getROClients(dd,dd0) {
 if (_roLogin() == 0) {return ([0])} 
+
+  let token = scriptProperties.getProperty('token');
+  let LifeTime = scriptProperties.getProperty('LifeTime');
+ 
   //запросим список клиентов
   dd0 = new Date(dd0).getTime();
   dd = new Date(dd).getTime();
@@ -226,7 +260,9 @@ if (_roLogin() == 0) {return ([0])}
   //запросим список продаж
   dd0 = new Date(dd0).getTime();
   dd = new Date(dd).getTime();
-  
+  let token = scriptProperties.getProperty('token');
+  let LifeTime = scriptProperties.getProperty('LifeTime');
+   
   var url = 'https://api.remonline.ru/retail/sales/?token='+token+'&created_at[]='+dd0+'&created_at[]='+dd;
   var login = UrlFetchApp.fetch(url);
   var data = JSON.parse(login.getContentText("UTF-8"));
