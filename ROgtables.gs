@@ -1,4 +1,4 @@
-var api_key = '0e4705dab5a64e519df9edca3d5eb744';
+var api_key = ' '; //вставить ключ из https://app.remonline.ua/settings/api
 var scriptProperties = PropertiesService.getScriptProperties();
 let lt = new Date().getTime()-100;
 scriptProperties.setProperties({'token' : '',
@@ -51,6 +51,31 @@ function _roLogin() {
  return (1);
 }
 
+function getROstatuses() {
+
+ if (_roLogin() == 0) {return ([0])}
+
+  let token = scriptProperties.getProperty('token');
+  let LifeTime = scriptProperties.getProperty('LifeTime');
+ //запросим список статусов
+  var url = 'https://api.remonline.ru/statuses/?token='+token;
+  var login = UrlFetchApp.fetch(url);
+  var data = JSON.parse(login.getContentText("UTF-8"));
+  var i=0;
+  if (data.success != true) {
+    return ([0]);
+    }
+  var ids=[];
+  var rc=0;
+  ids[0] =['id','name','color','group'];
+  for (i in data.data) {
+        ids [rc] = [data.data[i].id, data.data[i].name, data.data[i].color, data.data[i].group];
+        rc++;
+  }
+  return (ids);
+}
+
+
 function getROcashbox() {
 
  if (_roLogin() == 0) {return ([0])}
@@ -67,7 +92,7 @@ function getROcashbox() {
     }
   var ids =[];
   for (i in data.data) {
-  ids [i] = [data.data[i].currency, data.data[i].balance, data.data[i].type, data.data[i].title, data.data[i].id];
+    ids [i] = [data.data[i].currency, data.data[i].balance, data.data[i].type, data.data[i].title, data.data[i].id];
   }
   return (ids);
 }
