@@ -10,9 +10,18 @@
 //в основном развертывании и вызовом по часам. периодичность 4 часа - нормально.
 //проекту надо будет дать права на доступ к почте - это произойдет автоматически при первом запуске
 
+//читаем все непрочитанные сообщения в инбоксе
+//новые сообщения - первые в списке
+//ключ АПМ
+//для автоматического запуска необходимо установить триггер
+//в https://script.google.com/home/my через меню проекта
+//с вызовом  myFunction()
+//в основном развертывании и вызовом по часам. периодичность 4 часа - нормально.
+//проекту надо будет дать права на доступ к почте - это произойдет автоматически при первом запуске
+
 function myFunction() {
-  var api_key = ' '; //тут прописать свой ключ
-  var lead_type_id = '47471';
+  var api_key = '';  //тут прописать апи ключ
+  var leadtype_id = '120853'; //тут прописать id формы обращения
   var res = _roLogin(api_key);
   if (res[0] != 0) {
      var token = res[0];
@@ -42,9 +51,9 @@ function myFunction() {
                   let repl = from.match(/<(.*)>/g)||[from] ;
                   let regg = /(<|>)/g;
                   let rr = repl[0].replace(regg, "");
-                  //Logger.log("FROM:", from);
-                  var lead_id = putROlead(token, rr, from, msg.getPlainBody());
-                  //Logger.log("lead_id:", lead_id);
+            
+                  var lead_id = putROlead(token, rr, from, msg.getPlainBody(),leadtype_id)
+                
                   if (lead_id !=0) msg.markRead();
             }
       }
@@ -72,14 +81,13 @@ function _roLogin(api_key) {
 //  
 //  
 
-function putROlead(token, leadEmail, leadFrom, body) {
+function putROlead(token, leadEmail, leadFrom, body, leadtype_id) {
 
   var url = 'https://api.remonline.ru/lead/';
   var tt = new Date();
   var leadData = {
   'token': token,
-  'contact_phone': ' ',
-  'lead_type_id' : lead_type_id,
+  'leadtype_id' : leadtype_id,
   'contact_name': leadFrom,
   'description': 'lead from email: '+leadEmail+'\n'+tt+'\n'+body
   };
@@ -87,13 +95,15 @@ function putROlead(token, leadEmail, leadFrom, body) {
         'method' : 'post',
         'payload' : leadData,
         'content-type' : 'application/x-www-form-urlen-coded',
-        'muteHttpExceptions' : false  
+        'muteHttpExceptions' : true  
       };
 
   var login = UrlFetchApp.fetch(url, options);
-
+  
   var data = JSON.parse(login.getContentText("UTF-8"));
   var i=0;
-  if (data.success = true) return (data.data.id);
+  if (data.success == true) return (data.data.id);
+  Logger.log(login); 
   return (0);
 }
+
