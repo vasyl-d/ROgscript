@@ -1,3 +1,4 @@
+// V 1.1 (c) Vasyl-D
 //читаем все непрочитанные сообщения в инбоксе
 //новые сообщения - первые в списке
 // Создать новый проект в https://script.google.com/home/my, скопировать туда содержимое этого файла
@@ -11,6 +12,7 @@
 
 function myFunction() {
   var api_key = ' '; //тут прописать свой ключ
+  var lead_type_id = '47471';
   var res = _roLogin(api_key);
   if (res[0] != 0) {
      var token = res[0];
@@ -77,6 +79,7 @@ function putROlead(token, leadEmail, leadFrom, body) {
   var leadData = {
   'token': token,
   'contact_phone': ' ',
+  'lead_type_id' : lead_type_id,
   'contact_name': leadFrom,
   'description': 'lead from email: '+leadEmail+'\n'+tt+'\n'+body
   };
