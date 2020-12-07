@@ -1,19 +1,17 @@
 // V 1.1 (c) Vasyl-D
+
 //читаем все непрочитанные сообщения в инбоксе
 //новые сообщения - первые в списке
-// Создать новый проект в https://script.google.com/home/my, скопировать туда содержимое этого файла
-//  
-// api_key - прописать свой ключ АПИ
+//ключ АПМ
 //для автоматического запуска необходимо установить триггер
 //в https://script.google.com/home/my через меню проекта
 //с вызовом  myFunction()
 //в основном развертывании и вызовом по часам. периодичность 4 часа - нормально.
 //проекту надо будет дать права на доступ к почте - это произойдет автоматически при первом запуске
-// быстро посмотреть дотупные ид форм обращений можно в редакторе форм - открыв код
 
 function myFunction() {
-  var api_key = '';  //тут прописать апи ключ
-  var leadtype_id = '120853'; //тут прописать id формы обращения
+  var api_key = ' '; //прописать апи ключ
+  var leadtype_id = ' ';  //прописать ид лид формы из https://app.remonline.ru/settings/fe/leads
   var res = _roLogin(api_key);
   if (res[0] != 0) {
      var token = res[0];
@@ -74,12 +72,12 @@ function _roLogin(api_key) {
 //  
 
 function putROlead(token, leadEmail, leadFrom, body, leadtype_id) {
-
   var url = 'https://api.remonline.ru/lead/';
-  var tt = new Date();
+  var tt = new Date(); 
   var leadData = {
   'token': token,
   'leadtype_id' : leadtype_id,
+  'contact_phone': ' ',
   'contact_name': leadFrom,
   'description': 'lead from email: '+leadEmail+'\n'+tt+'\n'+body
   };
@@ -91,7 +89,6 @@ function putROlead(token, leadEmail, leadFrom, body, leadtype_id) {
       };
 
   var login = UrlFetchApp.fetch(url, options);
-  
   var data = JSON.parse(login.getContentText("UTF-8"));
   var i=0;
   if (data.success == true) return (data.data.id);
