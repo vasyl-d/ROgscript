@@ -1,4 +1,7 @@
+// Ver 0.91 (c) Vasyl-D
+
 var api_key = ' '; //вставить ключ из https://app.remonline.ua/settings/api
+
 var scriptProperties = PropertiesService.getScriptProperties();
 let lt = new Date().getTime()-100;
 scriptProperties.setProperties({'token' : '',
@@ -9,6 +12,25 @@ function _today0() {
  var dd = new Date();
  var dd2= new Date(dd.getFullYear()+'.'+(dd.getMonth()+1)+'.'+dd.getDate());
  return dd2.getTime(); 
+}
+
+function sendUserError(message) {
+  var ui = SpreadsheetApp.getUi(); // Same variations.
+  var result = ui.alert(
+     'Ошибка: '+message,
+      ui.ButtonSet.OK);
+}
+
+function fetchData(url) {
+  if (!url || !url.match(/^https?:\/\/.+$/g)) {
+    sendUserError('"' + url + '" is not a valid url.');
+  }
+  var response = UrlFetchApp.fetch(url);
+  var content = JSON.parse(response.getContentText("UTF-8"));
+//  if (!content) {
+//    sendUserError('"' + url + '" returned no content.');
+//  }
+  return content;
 }
 
 function _roLogin() {
@@ -44,6 +66,7 @@ function _roLogin() {
                        });
      Logger.log('login token after:', token, 'lt after: ', lt);
    } else {
+     lock.releaseLock();
      return (0);
    }
   }
@@ -245,11 +268,11 @@ if (_roLogin() == 0) {return ([0])}
       return ([0]);
       }
   var contents =[]; 
-      contents[0] = ['id','Статус','Группа','Клиент телефон','Клиент, имя'];
+      contents[0] = ['id','Статус','Группа','Клиент телефон','Клиент, имя', 'Тип обращения'];
   var i;
   for (i = 0; i < cnt; i++)  { 
                       let cV = data.data[i];
-                      contents[i+1] = [cV.lead_id_label, cV.status.name, cV.status.group, cV.contact_phone, cV.contact_name];  ;
+                      contents[i+1] = [cV.lead_id_label, cV.status.name, cV.status.group, cV.contact_phone, cV.contact_name, cV.lead_type_id];  ;
                      };
    return(contents);
 }
