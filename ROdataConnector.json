@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "libraries": []
+  },
+  "dataStudio": {
+    "name": "RO Data Connector v2",
+    "logoUrl": "https://storage.remonline.ru/avatar/387072c956b04970a579b510122f0ad9.png",
+    "company": "RemOnline / Orderry",
+    "companyUrl": "https://remoline.ru",
+    "addonUrl": "https://github.com/vasyl-d/ROgscript",
+    "supportUrl": "https://github.com/vasyl-d/ROgscript/issues",
+    "description": "Fetch Remonline data"
+  }
+}
+
