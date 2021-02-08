@@ -1,10 +1,14 @@
 // Ver 1.02 (c) Vasyl-D
 
-var api_key = ''; //брать в https://app.remonline.ua/settings/api 
-var base_url = 'https://api.remonline.ru/';  //или .ua или orderry.com
+//Тут настроить под себя, ключ АПи лежит в https://app.remonline.ua/settings/api
+// 
+const api_key = ''; //брать в https://app.remonline.ua/settings/api 
+const base_url = 'https://api.remonline.ru/'; //или .ua или orderry.com
 
+//
+//
 var scriptProperties = PropertiesService.getScriptProperties();
-let lt = Date.now() - 100;
+var lt = Date.now() - 100;
 scriptProperties.setProperties({'token' : '',
   'LifeTime' : lt
   });
@@ -15,8 +19,8 @@ function _today0() {
 }
 
 function sendUserError(message) {
-  var ui = SpreadsheetApp.getUi(); // Same variations.
-  var result = ui.alert(
+  let ui = SpreadsheetApp.getUi(); 
+  let result = ui.alert(
      'Ошибка: '+message,
       ui.ButtonSet.OK);
 }
@@ -49,8 +53,7 @@ function getData(resurs) {
 }
 
 function _roLogin() {
-  //логинимся в РО
-  //надо избавиться от конкуренции за глобальную переменную
+  //логинимся в РО - получаем новій токен. если токен устрел - запрашиваем новый 
    var lock = LockService.getScriptLock();
    var success = lock.tryLock(20000);
     if (!success) {
@@ -60,7 +63,6 @@ function _roLogin() {
   var token = scriptProperties.getProperty('token');
   var ltm = scriptProperties.getProperty('LifeTime');
  
-  Logger.log('login token before:', token, 'lt before: ', ltm);
   var url = base_url + 'token/new';
   var options = {
         'method' : 'post',
@@ -79,7 +81,6 @@ function _roLogin() {
       scriptProperties.setProperties({'token' : token,
                       'LifeTime' : ltm
                        });
-      Logger.log('login token after:', token, 'lt after: ', ltm);
     } else {
       lock.releaseLock();
       return (0);
@@ -179,18 +180,22 @@ function getROorders(dd,dd0) {
                   dd0 : dd0,
                   dd : dd};
   fullResponse = getData(resurs);
-
+ 
   var contents =[]; 
-      contents[0] = ['id','Создан','Изменен','Готов','Закрыт','Статус','Клиент, имя','Клиент телефон','Стоимость','Оплачено','Запчасти','Работы'];
-  var i;
+      contents[0] = ['id','Создан','Изменен','Сделан','Закрыт','Статус','Клиент, имя','Клиент телефон','Стоимость','Оплачено','Запчасти','Работы'];
+  var i= 0;
   var cnt = fullResponse.length;
   for (i = 0; i < cnt; i++)  { 
-    var cV = fullResponse[i];
-    var str1 = new Date(cV.created_at);
-    var str2 = new Date(cV.modified_at);
-    var str3 = new Date(cV.done_at);
-    var str4 = new Date(cV.closed_at); 
-    contents[i+1] = [cV.id_label, str1, str2, str3, str4, cV.status.name, cV.client.name, cV.client.phone[0], cV.price, cV.payed, JSON.stringify(cV.parts[0]), JSON.stringify(cV.operations)];  ;
+    let cV = fullResponse[i];
+    let str1='';
+    let str2='';
+    let str3='';
+    let str4='';
+    if (cV.created_at) {str1 = new Date(cV.created_at)};
+    if (cV.modified_at) {str2 = new Date(cV.modified_at)};
+    if (cV.closed_at) {str4 = new Date(cV.closed_at)}; 
+    if (cV.done_at) {str4 = new Date(cV.done_at)}; 
+    contents[i+1] = [cV.id_label, str1, str2, str3, str4, cV.status.name, cV.client.name, cV.client.phone.toString(), cV.price, cV.payed, JSON.stringify(cV.parts), JSON.stringify(cV.operations)];  ;
   };
    return(contents);
 }
@@ -247,7 +252,7 @@ function getROClients(dd,dd0) {
   var cnt = fullResponse.length;
   for (i = 0; i < cnt; i++)  { 
     let cV = fullResponse[i];
-    contents[i+1] = [cV.id, cV.discount_code, cV.email, cV.phone[0], cV.name];  ;
+    contents[i+1] = [cV.id, cV.discount_code, cV.email, cV.phone.toString(), cV.name];  ;
   };
   return(contents);
 }
@@ -312,28 +317,6 @@ function getROOrderOperations(dd,dd0) {
           cV.operations[tr].title, cV.operations[tr].amount, cV.operations[tr].price, cV.operations[tr].cost, cV.operations[tr].discount_value];
           j++;
       };
-  };
-   return(contents);
-}
-
-function getROordersNew(dd,dd0) {
-  var fullResponse = [];
-  var resurs = {resurs : 'order/', 
-                  dd0 : dd0,
-                  dd : dd};
-  fullResponse = getData(resurs);
-
-  var contents =[]; 
-      contents[0] = ['id','Создан','Изменен','Готов','Закрыт','Статус','Клиент, имя','Клиент телефон','Стоимость','Оплачено','Запчасти','Работы'];
-  var i;
-  var cnt = fullResponse.length;
-  for (i = 0; i < cnt; i++)  { 
-    var cV = fullResponse[i];
-    var str1 = new Date(cV.created_at);
-    var str2 = new Date(cV.modified_at);
-    var str3 = new Date(cV.done_at);
-    var str4 = new Date(cV.closed_at); 
-    contents[i+1] = [cV.id_label, str1, str2, str3, str4, cV.status.name, cV.client.name, cV.client.phone[0], cV.price, cV.payed, JSON.stringify(cV.parts[0]), JSON.stringify(cV.operations)];  ;
   };
    return(contents);
 }
