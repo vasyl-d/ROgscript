@@ -1,0 +1,37 @@
+//Обхїединить данные из множества гугл таблиц, расположенных в одной директории
+
+function CombineWorkbooks() {
+  let foldername = 'БМВ'; //имя директории с исходными таблицами
+  
+  var folders = DriveApp.getFoldersByName(foldername)
+  var folder = folders.next();
+  var contents = folder.getFiles();
+  
+  var ss = SpreadsheetApp.create(foldername); //создаем результирующую таблицу
+  var sheet = ss.getActiveSheet();
+  sheet.appendRow( ['name', 'link'] ); //хедер данных
+  
+  var file;
+  var name;
+  var link;
+  while(contents.hasNext()) {
+    file = contents.next();
+    name = file.getName();
+    link = file.getUrl();
+    let row = [name];
+    var spreadsheet = SpreadsheetApp.openByUrl(link);
+    var sheet1 = spreadsheet.getSheets()[0]; 
+    var range = sheet1.getRange("A4:A7"); //исходный диапазон для слияния
+    var values = range.getValues();
+    //Logger.log(values);
+    var jj=1;
+    for (var i in values) {
+      for (var j in values[i]) {
+          var cell = values[i][j];
+          row[jj] = cell;
+          jj++;
+      }
+     }
+    sheet.appendRow(row); 
+  } 
+}
