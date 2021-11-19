@@ -1,0 +1,157 @@
+//для автоматического запуска необходимо установить триггер
+//в https://script.google.com/home/my через меню проекта
+//с вызовом  myFunction()
+//в основном развертывании и вызовом по часам. периодичность 4 часа - нормально.
+//проекту надо будет дать права на доступ к почте - это произойдет автоматически при первом запуске
+// V 1.1 (c) Vasyl-D
+
+function myFunction() {
+  var api_key = '0e4705dab5a64e519df9edca3d5eb744'; //прописать апи ключ
+  var ordertype_id = '57205';  //прописать ид типа заказа формы из редактора форм
+  var status_id = '207524';  // в каком статусе ищем заказы
+  var next_status_id = '203569'; //на какой статус меняем 
+  var target_emails = 'vpets07@gmail.com'; //на какой мейл шлем уведомление
+  var base_url = 'https://api.remonline.ru/';
+
+  var scriptProperties = PropertiesService.getScriptProperties();
+  var lt = Date.now() - 100;
+  scriptProperties.setProperties({'token' : '',
+                                  'LifeTime' : lt,
+                                  'api_key' : api_key,
+                                  'ordertype_id' :ordertype_id,
+                                  'status_id' : status_id,
+                                  'next_status_id':next_status_id,
+                                  'base_url' : base_url
+                                });
+  if (!_roLogin()) {
+     Logger.log('Не смогли подключиться к РО');
+     return (0);
+  }
+ 
+ // выбрать закзаы данного типа, с заданным статусом
+
+ var orderlist = getROorders();
+
+ // оотправить емейл
+ // сменить статус на следующий
+ Logger.log(orderlist);
+ for (var i in orderlist) {
+   var content = orderlist[i][1]+' '+orderlist[i][2];
+   GmailApp.sendEmail( target_emails, 'Заявка на поиск'+orderlist[i][0], content);
+   ROOrderChangeStatus(orderlist[i][0]);
+ }
+}
+
+function ROOrderChangeStatus(order_id){
+  var scriptProperties = PropertiesService.getScriptProperties();
+  var status_id = scriptProperties.getProperty('next_status_id');
+  var url = scriptProperties.getProperty('base_url')+'order/status/';
+  var token = scriptProperties.getProperty('token');
+
+  var payload = '&order_id='+order_id + '&status_id='+status_id;
+
+  var options = {
+        'method' : 'post',
+        'payload' : 'token='+token+payload,
+        'content-type' : 'application/x-www-form-urlen-coded',
+        'muteHttpExceptions' : false  
+      };
+  var login = UrlFetchApp.fetch(url, options);
+  var data = JSON.parse(login.getContentText("UTF-8"));
+  if (data.success) {return(true)}
+  return(false);
+}
+
+function _roLogin() {
+  var scriptProperties = PropertiesService.getScriptProperties();
+ // Logger.log(scriptProperties.getProperties());
+  var dd = new Date();
+
+  var api_key = scriptProperties.getProperty('api_key');
+  var url = scriptProperties.getProperty('base_url');
+  var tt = scriptProperties.getProperty('LifeTime');
+  
+  if (tt-dd > 100) {return(true)}
+
+  //получаем токен
+  url = url+'token/new';
+  var options = {
+        'method' : 'post',
+        'payload' : 'api_key='+api_key,
+        'content-type' : 'application/x-www-form-urlen-coded',
+        'muteHttpExceptions' : false  
+      };
+ // Logger.log(options, url);
+  var login = UrlFetchApp.fetch(url, options);
+  var data = JSON.parse(login.getContentText("UTF-8"));
+ 
+  if (data.success) {
+    scriptProperties.setProperties({'token': data.token, 'LifeTime': dd+10*60*50});
+    return(true); 
+  } 
+  return(false);  
+}
+
+//  
+function getData(url) {
+  var scriptProperties = PropertiesService.getScriptProperties();
+ //resurs = object {url}
+  var fullResponse = [];
+  var next;
+  var pageNum = 1;
+ 
+  do {
+    if (!_roLogin()) {
+      sendUserError('не удалось подключиться');
+    return([fullResponse]);
+    } 
+    var token = scriptProperties.getProperty('token');
+    var url = url+'&token='+token+'&page='+pageNum;
+   
+    var response = JSON.parse(UrlFetchApp.fetch(url));
+    var results = response.data;
+    fullResponse = fullResponse.concat(results);
+
+    next = ((response.count/50-pageNum) > 0);
+    pageNum++;
+  } while (next);
+
+  return fullResponse;
+}
+
+//  
+
+function getROorders() {
+  var scriptProperties = PropertiesService.getScriptProperties();
+  var fullResponse = [];
+  var ordertype_id = scriptProperties.getProperty('ordertype_id');  
+  var status_id = scriptProperties.getProperty('status_id');
+  var url = scriptProperties.getProperty('base_url')+'order/';
+  url = url + '?statuses[]='+status_id + '&types[]='+ordertype_id;
+
+  fullResponse = getData(url);
+ 
+ //доделать форму данных о заказе, заголовок - не нужен.
+
+  var contents =[]; 
+      contents[0] = ['id','Создан','Изменен','Сделан','Закрыт','Статус','Клиент, имя','Клиент телефон','Стоимость','Оплачено','Запчасти','Работы'];
+  var i= 0;
+  var cnt = fullResponse.length;
+  for (i = 0; i < cnt; i++)  { 
+    let cV = fullResponse[i];
+    let str1='';
+    let str2='';
+    let str3='';
+    let str4='';
+    if (cV.created_at) {str1 = new Date(cV.created_at)};
+    if (cV.modified_at) {str2 = new Date(cV.modified_at)};
+    if (cV.closed_at) {str4 = new Date(cV.closed_at)}; 
+    if (cV.done_at) {str4 = new Date(cV.done_at)}; 
+    contents[i+1] = [cV.id_label, str1, str2, str3, str4, cV.status.name, cV.client.name, cV.client.phone.toString(), cV.price, cV.payed, JSON.stringify(cV.parts), JSON.stringify(cV.operations)];  ;
+  };
+   return(contents);
+}
+
+
+
+
