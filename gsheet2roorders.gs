@@ -1,11 +1,11 @@
 //читаем все строки таблицы с номером телефона и именем клиента
-//создаем клиента+заказ и отмечаем строку как обработанную
+//создаем клиента+обращение и отмечаем строку как обработанную
 //в обращении указіваем крайний срок и ответственного менеджера
-//есть тайм аут функции - 6 минут, потому загрузка идет частями по примерно 600 строк
 //
+//в основном развертывании и вызовом по часам. периодичность 4 часа - нормально.
 //проекту надо будет дать права на доступ к почте - это произойдет автоматически при первом запуске
-// V 1.1 (c) Vasyl-D
- var api_key = '17f8915107a8435'; //
+// V 1.2 (c) Vasyl-D
+ var api_key = '17f8915107a84350953'; //
  var order_type_id = '175191';
  var token = '';
  var branch_id ='106955'; 
@@ -14,6 +14,9 @@
  var marketing_source ='286619';
  var status_id = '1275205';
  var dd = ''+new Date().getTime();
+ var i = 0; //с какой строки начинаем (считаем с 0, т.к. массив) из-за ограничения на время выполнения 
+            //функции 6 минут ведем счетчик загрузки и перезапускаем скрипт с указанием тут места откуда продолжать
+ var tt = new Date();
  var order = { 'token': token, 
               'branch_id': branch_id,
               'order_type': order_type_id,
@@ -33,20 +36,27 @@ var client = {'token': token,
               'marketing_source':marketing_source};
 
 
-//можно сделать пункт меню для вызова загрузки
-//function onOpen() {
-//  var spreadsheet = SpreadsheetApp.getActive();
-//  var menuItems = [
-//    {name: 'загрузить в РО', functionName: 'myFunction'},
-//  ];
-//  spreadsheet.addMenu('РемОНлайн', menuItems);
-//}
+
+function onOpen() {
+  var spreadsheet = SpreadsheetApp.getActive();
+  var menuItems = [
+    {name: 'загрузить в РО', functionName: 'myFunction'},
+  ];
+    spreadsheet.addMenu('РемОНлайн', menuItems);
+}
+
+function createTimeTrigger() {
+ ScriptApp.newTrigger("runScript")
+   .timeBased()
+   .everyMinutes(8)
+   .create();
+}
 
 function myFunction() {
   var res = _roLogin(api_key);
   if (res[0] != 0) {
      token = res[0];
-     var tt = res[1];
+     tt = res[1];
   } else {
      Logger.log('Не смогли подключиться к РО');
      return (0);
@@ -54,8 +64,16 @@ function myFunction() {
 
  var sheet = SpreadsheetApp.getActive().getSheetByName("Client");
  var data = sheet.getDataRange().getValues();
- var i = 1;
- data.forEach(function (row) {
+ var numRows = data.length;
+ while (i < numRows) {
+   row = data[i];
+   var ff = ProcessRow(row);
+   if ( ff == 0 ) {return(0)}
+   i++;
+ }      
+}
+
+function ProcessRow(row) {
    let tt2 = new Date();
    if ((tt2 - tt) > 100*60*8) {
        var res = _roLogin(api_key);
@@ -93,11 +111,8 @@ function myFunction() {
      }  
      Logger.log(order_id);
    };
-   i++;
-  });
-        
+   return(1);
 }
-
 
 function _roLogin(api_key) {
   //получаем токен
@@ -168,3 +183,4 @@ function postStatus(order_id, status_id){
   if (data.success == true) return (data.data.id);
   return (0);
 }
+
