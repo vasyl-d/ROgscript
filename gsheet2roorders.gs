@@ -5,12 +5,12 @@
 //в основном развертывании и вызовом по часам. периодичность 4 часа - нормально.
 //проекту надо будет дать права на доступ к почте - это произойдет автоматически при первом запуске
 // V 1.2 (c) Vasyl-D
- var api_key = '17f8915107a84350953'; //
+ var api_key = ''; //
  var order_type_id = '175191';
  var token = '';
  var branch_id ='106955'; 
  var manager_id ='173749';
- var base_url = 'https://api.remonline.ru/';
+ var base_url = 'https://api.remonline.app/';
  var marketing_source ='286619';
  var status_id = '1275205';
  var dd = ''+new Date().getTime();
