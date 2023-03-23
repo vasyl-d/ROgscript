@@ -1,0 +1,112 @@
+var sheet = SpreadsheetApp.getActive().getSheetByName("Settings");
+const APIKEY = '';
+const BASEURL = 'https://api.remonline.app/';
+const IDINVOICE = sheet.getRange('Invoice').getValues()[0]!='' ? '&id_labels[]='+((''+encodeURI(sheet.getRange('Invoice').getValues()[0])).split(',')).join('&id_labels[]=') :'';
+
+var TOKEN = roLogin();
+
+function roLogin() {
+  //получаем токен
+  let url = BASEURL+'token/new';
+ 
+  let options = {
+        'method' : 'post',
+        'payload' : 'api_key='+APIKEY,
+        'content-type' : 'application/x-www-form-urlen-coded',
+        'muteHttpExceptions' : false
+        };
+  
+  let login = UrlFetchApp.fetch(url, options);
+  let data = JSON.parse(login.getContentText("UTF-8"));
+
+  if (data.success) return(data.token);
+
+return false;
+}
+
+function getRoAcc(idinvoice) {
+  let id = idinvoice ? idinvoice: IDINVOICE;
+  let token = roLogin();
+  let url = BASEURL+'invoice/';
+  url = url+'?token='+token+id;
+  let options = {
+        'method' : 'get',
+        'content-type' : 'application/x-www-form-urlen-coded',
+        'muteHttpExceptions' : true,
+        'mode': 'same-origin'
+        };  
+
+  let login = UrlFetchApp.fetch(url, options);
+  let data = JSON.parse(login.getContentText("UTF-8"));
+  if (data.count != 0) {
+    return data.data;
+    }
+  return ([]);
+} 
+
+function getAccParts(idinvoice) {
+  let id = idinvoice ? '&id_labels[]='+ idinvoice: IDINVOICE;
+  let acc = getRoAcc(id)[0];
+  const parts = acc.products.filter(function (e) {
+    return e.service == false;
+  });
+  const res = parts.map(function (e){
+    const ss = e.order_id ? getRoOrderNum(e.order_id): e.order_id;
+    const line = [ss, e.title, e.amount, e.price]
+    return line
+  }); 
+  return res ? res: [''];
+}
+
+function getAccServices(idinvoice) {
+  let id = idinvoice ? '&id_labels[]='+ idinvoice: IDINVOICE;
+  let acc = getRoAcc(id)[0];
+  const parts = acc.products.filter(function (e) {
+    return e.service == true;
+  });
+  const res = parts.map(function (e){
+    const ss = e.order_id ? getRoOrderNum(e.order_id): e.order_id;
+    const line = [ss, e.title, e.amount, e.price]
+    return line
+  }); 
+  return res ? res: [''];
+}
+
+function getAccAll(idinvoice) {
+  let id = idinvoice ? '&id_labels[]='+ idinvoice: IDINVOICE;
+  let acc_serv = [];
+  let acc_part = [];
+  let acc = getRoAcc(id);
+  acc.forEach((el) => {
+    el.products.forEach(prod => {
+      const ss = prod.order_id ? getRoOrderNum(prod.order_id): prod.order_id;
+      str = [ss, prod.title, prod.amount, prod.price]
+      if (prod.service) {
+        acc_serv.push(str)
+      } else {
+        acc_part.push(str)
+      }
+    })
+  });
+  return  acc_serv.concat(acc_part);
+}
+
+function getRoOrderNum(id) {
+  let token = roLogin();
+  let url = BASEURL+'order/';
+  url = url+'?token='+token+"&ids[]="+id;
+  let options = {
+        'method' : 'get',
+        'content-type' : 'application/x-www-form-urlen-coded',
+        'muteHttpExceptions' : true,
+        'mode': 'same-origin'
+        };  
+
+  let login = UrlFetchApp.fetch(url, options);
+  let data = JSON.parse(login.getContentText("UTF-8"));
+  if (data.count != 0) {
+    return (data.data[0].id_label);
+    }
+  return ('');
+}
+
