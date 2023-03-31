@@ -6,7 +6,7 @@
 // V 1.1 (c) Vasyl-D
 
 function myFunction() {
-  var api_key = '0e4705dab5a64e519df9edca3d5eb744'; //прописать апи ключ
+  var api_key = '0e47.................4'; //прописать апи ключ
   var ordertype_id = '57205';  //прописать ид типа заказа формы из редактора форм
   var status_id = '207524';  // в каком статусе ищем заказы
   var next_status_id = '203569'; //на какой статус меняем 
